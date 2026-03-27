@@ -1,5 +1,5 @@
 {
-  "name": "metar-parser",
+  "name": "@cristianob/metar-parser",
   "version": "1.0.0",
   "description": "METAR parser with structured output for international reports",
   "main": "./dist/metar-parser.js",
