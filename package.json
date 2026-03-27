@@ -1,0 +1,36 @@
+{
+  "name": "metar",
+  "version": "1.0.0",
+  "description": "METAR parser with structured output for international reports",
+  "main": "./dist/metar-parser.cjs",
+  "module": "./dist/metar-parser.js",
+  "browser": "./dist/metar-parser.js",
+  "react-native": "./dist/metar-parser.js",
+  "types": "./dist/metar-parser.d.ts",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/metar-parser.d.ts",
+      "browser": "./dist/metar-parser.js",
+      "react-native": "./dist/metar-parser.js",
+      "import": "./dist/metar-parser.js",
+      "require": "./dist/metar-parser.cjs",
+      "default": "./dist/metar-parser.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --globals"
+  },
+  "devDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.12",
+    "@types/node": "^25.5.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

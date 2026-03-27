@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>METAR Parser Test Bench</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --surface: #162033;
+    --surface-2: #1d2a43;
+    --border: #2e3d5b;
+    --text: #e8eefc;
+    --muted: #99a7c2;
+    --accent: #74c0fc;
+    --accent-2: #ffd166;
+    --ok: #63e6be;
+    --err: #ff8787;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 24px;
+    background:
+      radial-gradient(circle at top left, rgba(116, 192, 252, 0.12), transparent 32%),
+      radial-gradient(circle at top right, rgba(255, 209, 102, 0.10), transparent 28%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .subtitle {
+    margin: 8px 0 24px;
+    color: var(--muted);
+  }
+
+  .panel {
+    background: rgba(22, 32, 51, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+    margin-bottom: 18px;
+  }
+
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  #metarInput {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Cascadia Code", "Fira Code", monospace;
+    font-size: 15px;
+    outline: none;
+  }
+
+  #metarInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(116, 192, 252, 0.12);
+  }
+
+  button {
+    border: 0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .primary {
+    background: var(--accent);
+    color: #08111f;
+  }
+
+  .secondary {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .examples {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .example {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: left;
+    font-family: "Cascadia Code", "Fira Code", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .example strong {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--accent);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .status.ok {
+    background: rgba(99, 230, 190, 0.14);
+    color: var(--ok);
+  }
+
+  .status.error {
+    background: rgba(255, 135, 135, 0.14);
+    color: var(--err);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .card.wide {
+    grid-column: span 2;
+  }
+
+  .card h3 {
+    margin: 0 0 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .mono {
+    font-family: "Cascadia Code", "Fira Code", monospace;
+    word-break: break-word;
+  }
+
+  .kv {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 8px 0;
+    font-size: 14px;
+  }
+
+  .kv .k {
+    color: var(--muted);
+  }
+
+  .kv .v {
+    text-align: right;
+  }
+
+  .detail-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .detail-item {
+    padding: 10px 12px;
+    background: rgba(29, 42, 67, 0.52);
+    border: 1px solid rgba(46, 61, 91, 0.9);
+    border-radius: 12px;
+  }
+
+  .detail-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    align-items: baseline;
+  }
+
+  .detail-title {
+    font-family: "Cascadia Code", "Fira Code", monospace;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .detail-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(116, 192, 252, 0.12);
+    border: 1px solid rgba(116, 192, 252, 0.2);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .subtle {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .subsection {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(153, 167, 194, 0.22);
+  }
+
+  .subsection:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .subsection-title {
+    margin-bottom: 8px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent-2);
+    font-weight: 700;
+  }
+
+  pre {
+    margin: 0;
+    padding: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: auto;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  @media (max-width: 760px) {
+    .input-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>METAR Parser</h1>
+    <p class="subtitle">Bancada interativa para validar a nova biblioteca com saída estável, tolerante e próxima da estrutura da versão antiga.</p>
+
+    <section class="panel">
+      <div class="input-row">
+        <input id="metarInput" type="text" spellcheck="false" autocomplete="off" placeholder="Digite ou cole um METAR aqui">
+        <button class="primary" id="parseBtn">Parse</button>
+        <button class="secondary" id="clearBtn">Limpar</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <strong>Exemplos</strong>
+      <div class="examples" id="examples"></div>
+    </section>
+
+    <section class="panel hidden" id="resultPanel"></section>
+  </div>
+
+  <script type="module">
+    import parseMETAR from "../dist/metar-parser.js";
+    import EXAMPLES from "./metar-examples.js";
+
+    const resultPanel = document.getElementById("resultPanel");
+    const input = document.getElementById("metarInput");
+
+    function escapeHtml(value) {
+      const div = document.createElement("div");
+      div.textContent = value;
+      return div.innerHTML;
+    }
+
+    function kv(key, value) {
+      return `<div class="kv"><span class="k">${escapeHtml(String(key))}</span><span class="v">${escapeHtml(String(value))}</span></div>`;
+    }
+
+    function renderTag(value) {
+      return `<span class="tag">${escapeHtml(String(value))}</span>`;
+    }
+
+    function renderDetailItem(title, subtitle, body, tags) {
+      return `
+        <div class="detail-item">
+          <div class="detail-head">
+            <div class="detail-title">${escapeHtml(title)}</div>
+            ${subtitle ? `<div class="detail-subtitle">${escapeHtml(subtitle)}</div>` : ""}
+          </div>
+          ${body || ""}
+          ${tags && tags.length ? `<div class="tag-row">${tags.map(renderTag).join("")}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function formatWindDirection(wind) {
+      if (!wind || wind.direction === null) return "null";
+      if (wind.direction === "VRB") return "Variável (VRB)";
+      return `${wind.direction}°`;
+    }
+
+    function formatWindVariation(wind) {
+      if (!wind) return "null";
+      if (wind.variation === true) return "Variável por VRB";
+      if (wind.variation && typeof wind.variation === "object") {
+        return `${wind.variation.min}° a ${wind.variation.max}°`;
+      }
+      return "Sem variação informada";
+    }
+
+    function translatePhenomenon(code) {
+      const map = {
+        "-": "leve",
+        "+": "forte",
+        VC: "na vizinhança",
+        MI: "raso",
+        PR: "parcial",
+        BC: "bancos",
+        DR: "baixo arrastamento",
+        BL: "levantado pelo vento",
+        SH: "pancadas",
+        TS: "trovoada",
+        FZ: "congelante",
+        DZ: "garoa",
+        RA: "chuva",
+        SN: "neve",
+        SG: "grãos de neve",
+        IC: "cristais de gelo",
+        PL: "pellets de gelo",
+        GR: "granizo",
+        GS: "granizo miúdo",
+        UP: "precipitação desconhecida",
+        FG: "nevoeiro",
+        BR: "névoa úmida",
+        HZ: "névoa seca",
+        DU: "poeira extensa",
+        FU: "fumaça",
+        SA: "areia",
+        VA: "cinza vulcânica",
+        PO: "remoinho de poeira/areia",
+        SQ: "linha de rajada",
+        FC: "nuvem funil",
+        DS: "tempestade de poeira",
+        SS: "tempestade de areia"
+      };
+      return map[code] || code;
+    }
+
+    function renderWeather(result) {
+      if (!result.weather) return "";
+      return `
+        <div class="card wide">
+          <h3>Weather</h3>
+          <div class="detail-list">
+            ${result.weather.map((group) => {
+              const translated = group.phenomena.length
+                ? group.phenomena.map((part) => `${part.code}: ${translatePhenomenon(part.code)}`).join(" | ")
+                : "sem fenômeno principal";
+              const tags = [];
+              if (group.intensity) tags.push(`Intensidade: ${translatePhenomenon(group.intensity)}`);
+              if (group.descriptor) tags.push(`Descritor: ${translatePhenomenon(group.descriptor)}`);
+              if (group.proximity) tags.push(`Proximidade: ${translatePhenomenon(group.proximity)}`);
+              if (group.phenomena && group.phenomena.length) {
+                tags.push(...group.phenomena.map((item) => `Fenômeno: ${translatePhenomenon(item.code)}`));
+              }
+              return renderDetailItem(group.raw, translated, "", tags);
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderClouds(result) {
+      if (!result.clouds) return "";
+      return `
+        <div class="card wide">
+          <h3>Clouds</h3>
+          <div class="detail-list">
+            ${result.clouds.map((cloud) => {
+              const subtitle = cloud.meaning || "";
+              let body = "";
+              if (cloud.type === "layer") {
+                body += kv("Base", cloud.altitude !== null ? `${cloud.altitude} ft` : "indisponível");
+                body += kv("Tipo convectivo", cloud.convectiveTypeUnavailable ? "indisponível" : (cloud.convectiveType || "nenhum"));
+              } else if (cloud.type === "obscuredCb") {
+                body += `<div class="subtle">Cumulonimbus obscurecido, sem altura observável.</div>`;
+              } else {
+                body += `<div class="subtle">${escapeHtml(cloud.meaning || cloud.raw)}</div>`;
+              }
+              const tags = [];
+              if (cloud.cumulonimbus) tags.push("CB");
+              if (cloud.toweringCumulus) tags.push("TCU");
+              if (cloud.baseUnavailable) tags.push("Base indisponível");
+              if (cloud.unavailable) tags.push("Dados indisponíveis");
+              return renderDetailItem(cloud.raw, subtitle, body, tags);
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderVerticalVisibility(result) {
+      if (!result.visibility || !result.visibility.vertical) return "";
+      const vv = result.visibility.vertical;
+      return `
+        <div class="card">
+          <h3>Vertical Visibility</h3>
+          ${kv("Raw", vv.raw)}
+          ${kv("Value", vv.unavailable ? "indisponível" : `${vv.value} ${vv.unit}`)}
+          ${kv("Unavailable", vv.unavailable)}
+        </div>
+      `;
+    }
+
+    function renderRvr(result) {
+      if (!result.rvr) return "";
+      return `
+        <div class="card wide">
+          <h3>RVR</h3>
+          <div class="detail-list">
+            ${result.rvr.map((item) => {
+              const runway = item.direction ? `${item.runway}${item.direction}` : item.runway;
+              const range = item.variableIndicator
+                ? `${item.minIndicator || ""}${item.minValue} até ${item.maxIndicator || ""}${item.maxValue} ${item.unit || ""}`.trim()
+                : `${item.minIndicator || ""}${item.minValue} ${item.unit || ""}`.trim();
+              const body = `
+                ${kv("Runway", runway)}
+                ${kv("Range", range)}
+                ${kv("Trend", item.trend || "sem tendência")}
+              `;
+              return renderDetailItem(item.raw, "Runway Visual Range", body, []);
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSupplementary(result) {
+      if (!result.recentWeather && !result.windShear && !result.remarks && !result.seaState && !result.trend && !result.runwayState) return "";
+      const items = [];
+      if (result.recentWeather) {
+        items.push(...result.recentWeather.map((item) => {
+          const body = `
+            ${kv("Raw", item.raw)}
+            ${kv("Description", item.description || "sem descrição")}
+          `;
+          return renderDetailItem(item.code, "recent weather", body, []);
+        }));
+      }
+      if (result.windShear) {
+        items.push(...result.windShear.map((item) => {
+          const body = `
+            ${kv("Raw", item.raw)}
+            ${kv("Runways", item.allRunways ? "todas" : item.runway)}
+          `;
+          return renderDetailItem("Wind Shear", item.allRunways ? "todas as pistas" : `pista ${item.runway}`, body, []);
+        }));
+      }
+      if (result.seaState) {
+        items.push(renderDetailItem(result.seaState.raw, "estado do mar", `
+          ${kv("Sea temp", result.seaState.seaSurfaceTemperatureC !== null ? `${result.seaState.seaSurfaceTemperatureC} °C` : "null")}
+          ${kv("Sea code", result.seaState.seaConditionCode !== null ? result.seaState.seaConditionCode : "null")}
+          ${kv("Wave height", result.seaState.waveHeightDm !== null ? `${result.seaState.waveHeightDm} dm` : "null")}
+        `, []));
+      }
+      if (result.runwayState) {
+        items.push(...result.runwayState.map((item) => {
+          let body = `
+            ${kv("Runway", `${item.runway}${item.direction || ""}`)}
+            ${kv("Cleared", item.cleared)}
+          `;
+          if (item.cleared) {
+            body += kv("From Runway", item.fromRunway || "null");
+          } else {
+            body += kv("Deposit Code", item.depositCode || "null");
+            body += kv("Contamination Code", item.contaminationCode || "null");
+            body += kv("Depth Code", item.depthCode || "null");
+            body += kv("Friction Code", item.frictionCode || "null");
+          }
+          return renderDetailItem(item.raw, "runway state", body, []);
+        }));
+      }
+      if (result.trend) {
+        items.push(...result.trend.map((item) => {
+          const sections = [];
+          if (item.timeIndicators && item.timeIndicators.length) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Time</div>
+                ${kv("Indicators", item.timeIndicators.map((time) => `${time.kind}${time.value}`).join(", "))}
+              </div>
+            `);
+          }
+          if (item.visibility) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Visibility</div>
+                ${kv("Raw", item.visibility.raw)}
+                ${kv("Value", `${item.visibility.value} ${item.visibility.unit}`)}
+                ${kv("Greater Than", item.visibility.greaterThan)}
+                ${kv("Less Than", item.visibility.lessThan)}
+              </div>
+            `);
+          }
+          if (item.weather && item.weather.length) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Weather</div>
+                <div class="detail-list">
+                  ${item.weather.map((weather) => {
+                    const tags = [];
+                    if (weather.intensity) tags.push(`Intensidade: ${translatePhenomenon(weather.intensity)}`);
+                    if (weather.descriptor) tags.push(`Descritor: ${translatePhenomenon(weather.descriptor)}`);
+                    if (weather.proximity) tags.push(`Proximidade: ${translatePhenomenon(weather.proximity)}`);
+                    if (weather.phenomena && weather.phenomena.length) {
+                      tags.push(...weather.phenomena.map((phenomenon) => `Fenômeno: ${translatePhenomenon(phenomenon.code)}`));
+                    }
+                    const subtitle = weather.phenomena.length
+                      ? weather.phenomena.map((phenomenon) => `${phenomenon.code}: ${translatePhenomenon(phenomenon.code)}`).join(" | ")
+                      : "sem fenômeno principal";
+                    return renderDetailItem(weather.raw, subtitle, "", tags);
+                  }).join("")}
+                </div>
+              </div>
+            `);
+          }
+          if (item.clouds && item.clouds.length) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Clouds</div>
+                <div class="detail-list">
+                  ${item.clouds.map((cloud) => {
+                    let body = "";
+                    if (cloud.type === "layer") {
+                      body += kv("Base", cloud.altitude !== null ? `${cloud.altitude} ft` : "indisponível");
+                      body += kv("Convective", cloud.convectiveTypeUnavailable ? "indisponível" : (cloud.convectiveType || "nenhum"));
+                    } else if (cloud.type === "obscuredCb") {
+                      body += `<div class="subtle">Cumulonimbus obscurecido.</div>`;
+                    } else {
+                      body += `<div class="subtle">${escapeHtml(cloud.meaning || cloud.raw)}</div>`;
+                    }
+                    const tags = [];
+                    if (cloud.cumulonimbus) tags.push("CB");
+                    if (cloud.toweringCumulus) tags.push("TCU");
+                    return renderDetailItem(cloud.raw, cloud.meaning || "", body, tags);
+                  }).join("")}
+                </div>
+              </div>
+            `);
+          }
+          if (item.wind) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Wind</div>
+                ${kv("Raw", item.wind.raw)}
+                ${kv("Direction", formatWindDirection(item.wind))}
+                ${kv("Speed", item.wind.speed !== null ? `${item.wind.speed} ${item.wind.unit || ""}`.trim() : "null")}
+                ${kv("Gust", item.wind.gust !== null ? `${item.wind.gust} ${item.wind.unit || ""}`.trim() : "null")}
+              </div>
+            `);
+          }
+          if (item.cavok) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Ceiling And Visibility</div>
+                ${kv("CAVOK", true)}
+              </div>
+            `);
+          }
+          if (item.unparsedTokens && item.unparsedTokens.length) {
+            sections.push(`
+              <div class="subsection">
+                <div class="subsection-title">Unparsed</div>
+                ${kv("Tokens", item.unparsedTokens.join(", "))}
+              </div>
+            `);
+          }
+          return renderDetailItem(item.type, item.raw, sections.join("") || `<div class="subtle">sem mudança detalhada</div>`, []);
+        }));
+      }
+      if (result.remarks) {
+        let body = `<div class="mono">${escapeHtml(result.remarks.raw)}</div>`;
+        body += kv("Automatic", result.remarks.automatic);
+        body += kv("Tokens", result.remarks.tokens.length ? result.remarks.tokens.join(", ") : "nenhum");
+        if (result.remarks.qfe) {
+          body += kv("QFE", `${result.remarks.qfe.value} ${result.remarks.qfe.unit}`);
+          body += kv("QFE Description", result.remarks.qfe.description || "sem descrição");
+        }
+        if (result.remarks.unparsedTokens.length) {
+          body += kv("Unparsed", result.remarks.unparsedTokens.join(", "));
+        }
+        items.push(renderDetailItem("RMK", "remarks", body, result.remarks.automatic ? ["AUT"] : []));
+      }
+      return `
+        <div class="card wide">
+          <h3>Supplementary</h3>
+          <div class="detail-list">${items.join("")}</div>
+        </div>
+      `;
+    }
+
+    function renderExamples() {
+      const root = document.getElementById("examples");
+      root.innerHTML = EXAMPLES.map((example) => (
+        `<button class="example" data-value="${escapeHtml(example.metar)}"><strong>${escapeHtml(example.label)}</strong>${escapeHtml(example.metar)}</button>`
+      )).join("");
+
+      root.querySelectorAll(".example").forEach((button, index) => {
+        button.addEventListener("click", () => {
+          input.value = EXAMPLES[index].metar;
+          runParse();
+        });
+      });
+    }
+
+    function renderError(error) {
+      resultPanel.classList.remove("hidden");
+      resultPanel.innerHTML = `
+        <div class="status error">Erro de parse</div>
+        <div class="card">
+          <h3>Mensagem</h3>
+          <div class="mono">${escapeHtml(error.message || "Erro desconhecido")}</div>
+          ${error.token ? `<div class="mono" style="margin-top:12px;">Token: ${escapeHtml(error.token)}${typeof error.tokenIndex === "number" ? ` (posição ${error.tokenIndex})` : ""}</div>` : ""}
+        </div>
+      `;
+    }
+
+    function renderSuccess(result) {
+      const cards = [];
+
+      cards.push(`
+        <div class="card">
+          <h3>Header</h3>
+          ${kv("Type", result.type)}
+          ${kv("Station", result.station)}
+          ${kv("Time", result.time ? new Date(result.time).toISOString() : "null")}
+          ${kv("AUTO", result.auto)}
+          ${kv("Correction", result.correction)}
+        </div>
+      `);
+
+      cards.push(`
+        <div class="card">
+          <h3>Wind</h3>
+          ${kv("Raw", result.wind ? result.wind.raw : "null")}
+          ${kv("Direction", formatWindDirection(result.wind))}
+          ${kv("Calm", result.wind ? result.wind.calm : "null")}
+          ${kv("Speed", result.wind && result.wind.speed !== null ? `${result.wind.speed} ${result.wind.unit || ""}`.trim() : "null")}
+          ${kv("Speed Operator", result.wind ? result.wind.speedOperator : "null")}
+          ${kv("Gust", result.wind && result.wind.gust !== null ? `${result.wind.gust} ${result.wind.unit || ""}`.trim() : "null")}
+          ${kv("Gust Operator", result.wind ? result.wind.gustOperator : "null")}
+          ${kv("Variation", formatWindVariation(result.wind))}
+        </div>
+      `);
+
+      cards.push(`
+        <div class="card">
+          <h3>Visibility</h3>
+          ${kv("CAVOK", result.cavok)}
+          ${kv("Raw", result.visibility && result.visibility.prevailing ? result.visibility.prevailing.raw : "null")}
+          ${kv("Visibility", result.visibility && result.visibility.prevailing ? (result.visibility.prevailing.unavailable ? "indisponível" : result.visibility.prevailing.value) : "null")}
+          ${kv("Unit", result.visibility && result.visibility.prevailing ? result.visibility.prevailing.unit : "null")}
+          ${kv("Greater Than", result.visibility && result.visibility.prevailing ? result.visibility.prevailing.greaterThan : "null")}
+          ${kv("Less Than", result.visibility && result.visibility.prevailing ? result.visibility.prevailing.lessThan : "null")}
+          ${kv("Unavailable", result.visibility && result.visibility.prevailing ? result.visibility.prevailing.unavailable : "null")}
+          ${kv("Directional Min", result.visibility && result.visibility.minimum ? `${result.visibility.minimum.value} ${result.visibility.minimum.direction || ""}`.trim() : "null")}
+        </div>
+      `);
+
+      const verticalVisibilityCard = renderVerticalVisibility(result);
+      if (verticalVisibilityCard) cards.push(verticalVisibilityCard);
+
+      cards.push(`
+        <div class="card">
+          <h3>Altimeter</h3>
+          ${kv("Raw", result.altimeter ? result.altimeter.raw : "null")}
+          ${kv("Value", result.altimeter ? result.altimeter.value : "null")}
+          ${kv("Unit", result.altimeter ? result.altimeter.unit : "null")}
+          ${kv("inHg", result.altimeter ? result.altimeter.inHg : "null")}
+          ${kv("hPa", result.altimeter ? result.altimeter.hPa : "null")}
+        </div>
+      `);
+
+      cards.push(`
+        <div class="card">
+          <h3>Temperature</h3>
+          ${kv("Raw", result.temperature ? result.temperature.raw : "null")}
+          ${kv("Air", result.temperature && result.temperature.air !== null ? `${result.temperature.air} °C` : "null")}
+          ${kv("Dew Point", result.temperature && result.temperature.dewpoint !== null ? `${result.temperature.dewpoint} °C` : "null")}
+          ${kv("Spread", result.temperature && result.temperature.air !== null && result.temperature.dewpoint !== null ? `${(result.temperature.air - result.temperature.dewpoint)} °C` : "null")}
+        </div>
+      `);
+
+      const weatherCard = renderWeather(result);
+      if (weatherCard) cards.push(weatherCard);
+
+      const cloudsCard = renderClouds(result);
+      if (cloudsCard) cards.push(cloudsCard);
+
+      const rvrCard = renderRvr(result);
+      if (rvrCard) cards.push(rvrCard);
+
+      const supplementaryCard = renderSupplementary(result);
+      if (supplementaryCard) cards.push(supplementaryCard);
+
+      resultPanel.classList.remove("hidden");
+      resultPanel.innerHTML = `
+        <div class="status ok">Parse concluído</div>
+        <div class="cards">${cards.join("")}</div>
+        <div style="margin-top:16px;">
+          <h3 style="margin:0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 12px;">JSON</h3>
+          <pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>
+        </div>
+      `;
+    }
+
+    function runParse() {
+      const value = input.value.trim();
+      if (!value) return;
+
+      try {
+        renderSuccess(parseMETAR(value));
+      } catch (error) {
+        renderError(error);
+      }
+    }
+
+    document.getElementById("parseBtn").addEventListener("click", runParse);
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      input.value = "";
+      resultPanel.classList.add("hidden");
+      resultPanel.innerHTML = "";
+    });
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") runParse();
+    });
+
+    renderExamples();
+    input.value = EXAMPLES[0].metar;
+    runParse();
+  </script>
+</body>
+</html>
