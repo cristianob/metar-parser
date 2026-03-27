@@ -2,9 +2,7 @@
   "name": "metar",
   "version": "1.0.0",
   "description": "METAR parser with structured output for international reports",
-  "main": "./dist/metar-parser.cjs",
-  "module": "./dist/metar-parser.js",
-  "browser": "./dist/metar-parser.js",
+  "main": "./dist/metar-parser.js",
   "react-native": "./dist/metar-parser.js",
   "types": "./dist/metar-parser.d.ts",
   "files": [
@@ -15,10 +13,7 @@
   "exports": {
     ".": {
       "types": "./dist/metar-parser.d.ts",
-      "browser": "./dist/metar-parser.js",
-      "react-native": "./dist/metar-parser.js",
       "import": "./dist/metar-parser.js",
-      "require": "./dist/metar-parser.cjs",
       "default": "./dist/metar-parser.js"
     }
   },

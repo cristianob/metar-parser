@@ -1048,12 +1048,7 @@ describe("parser behavior", () => {
     });
   });
 
-  it("exports helper access through the main function", () => {
-    const rvr = parseMETAR.parseRVR("R27L/0800N");
-
+  it("exports only the main parser function at runtime", () => {
     expect(typeof parseMETAR).toBe("function");
-    expect(parseMETAR.helpers).toBeTruthy();
-    expect(rvr.runway).toBe("R27");
-    expect(rvr.direction).toBe("L");
   });
 });

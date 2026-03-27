@@ -301,34 +301,6 @@ export interface WindShearParseResult {
   value: WindShearGroup;
 }
 
-export interface ParseMetarHelpers {
-  parseDateTimeGroup: typeof parseDateTimeGroup;
-  parseWind: typeof parseWind;
-  parseWindVariation: typeof parseWindVariation;
-  parseVisibility: typeof parseVisibility;
-  parseVisibilityGroup: typeof parseVisibilityGroup;
-  parseDirectionalVisibility: typeof parseDirectionalVisibility;
-  parseRVR: typeof parseRVR;
-  parseRunwayState: typeof parseRunwayState;
-  parseCloud: typeof parseCloud;
-  parseTemperatureDewpoint: typeof parseTemperatureDewpoint;
-  parseAltimeter: typeof parseAltimeter;
-  parseRecentWeather: typeof parseRecentWeather;
-  parseWindShear: typeof parseWindShear;
-  parseSeaState: typeof parseSeaState;
-  parseQfe: typeof parseQfe;
-  parseRemarks: typeof parseRemarks;
-  parseTrendTimeToken: typeof parseTrendTimeToken;
-  parseTrendSection: typeof parseTrendSection;
-}
-
-export interface ParseMetarFunction {
-  (message: string): MetarParseResult;
-  Parser: typeof MetarParser;
-  parseRVR: typeof parseRVR;
-  helpers: ParseMetarHelpers;
-}
-
 const REPORT_TYPES = new Set(["METAR", "SPECI"]);
 const CARDINAL_DIRECTIONS = new Set(["N", "NE", "E", "SE", "S", "SW", "W", "NW"]);
 
@@ -1474,29 +1446,8 @@ class MetarParser {
   }
 }
 
-const parseMETAR: ParseMetarFunction = Object.assign((message: string) => new MetarParser(message).parse(), {
-  Parser: MetarParser,
-  parseRVR,
-  helpers: {
-    parseDateTimeGroup,
-    parseWind,
-    parseWindVariation,
-    parseVisibility,
-    parseVisibilityGroup,
-    parseDirectionalVisibility,
-    parseRVR,
-    parseRunwayState,
-    parseCloud,
-    parseTemperatureDewpoint,
-    parseAltimeter,
-    parseRecentWeather,
-    parseWindShear,
-    parseSeaState,
-    parseQfe,
-    parseRemarks,
-    parseTrendTimeToken,
-    parseTrendSection,
-  },
-});
+export type ParseMetarFunction = (message: string) => MetarParseResult;
+
+const parseMETAR: ParseMetarFunction = (message: string) => new MetarParser(message).parse();
 
 export default parseMETAR;

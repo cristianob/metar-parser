@@ -160,7 +160,6 @@ interface CloudVerticalVisibilityGroup {
     unavailable: boolean;
 }
 type CloudGroup = CloudClearGroup | CloudLayerGroup | ObscuredCbGroup;
-type ParsedCloudToken = CloudGroup | CloudVerticalVisibilityGroup;
 interface TemperatureDewpointParse {
     raw: string;
     temperature: number;
@@ -260,76 +259,7 @@ interface WindShearParseResult {
     consumed: number;
     value: WindShearGroup;
 }
-interface ParseMetarHelpers {
-    parseDateTimeGroup: typeof parseDateTimeGroup;
-    parseWind: typeof parseWind;
-    parseWindVariation: typeof parseWindVariation;
-    parseVisibility: typeof parseVisibility;
-    parseVisibilityGroup: typeof parseVisibilityGroup;
-    parseDirectionalVisibility: typeof parseDirectionalVisibility;
-    parseRVR: typeof parseRVR;
-    parseRunwayState: typeof parseRunwayState;
-    parseCloud: typeof parseCloud;
-    parseTemperatureDewpoint: typeof parseTemperatureDewpoint;
-    parseAltimeter: typeof parseAltimeter;
-    parseRecentWeather: typeof parseRecentWeather;
-    parseWindShear: typeof parseWindShear;
-    parseSeaState: typeof parseSeaState;
-    parseQfe: typeof parseQfe;
-    parseRemarks: typeof parseRemarks;
-    parseTrendTimeToken: typeof parseTrendTimeToken;
-    parseTrendSection: typeof parseTrendSection;
-}
-interface ParseMetarFunction {
-    (message: string): MetarParseResult;
-    Parser: typeof MetarParser;
-    parseRVR: typeof parseRVR;
-    helpers: ParseMetarHelpers;
-}
-declare function parseDateTimeGroup(token: string | undefined): DateTimeGroup | null;
-declare function parseWind(token: string | undefined): WindGroup | null;
-declare function parseWindVariation(token: string | undefined): WindVariationRange | null;
-declare function parseVisibility(token: string | undefined): BaseVisibility | null;
-declare function parseVisibilityGroup(token: string | undefined, nextToken: string | undefined): VisibilityGroup | null;
-declare function parseDirectionalVisibility(token: string | undefined): DirectionalVisibility | null;
-declare function parseTrendTimeToken(token: string | undefined): TrendTimeIndicator | null;
-declare function parseRVR(token: string | undefined): RvrGroup | null;
-declare function parseRunwayState(token: string | undefined): RunwayStateGroup | null;
-declare function parseCloud(token: string | undefined): ParsedCloudToken | null;
-declare function parseTemperatureDewpoint(token: string | undefined): TemperatureDewpointParse | null;
-declare function parseAltimeter(token: string | undefined): AltimeterParse | null;
-declare function parseRecentWeather(token: string | undefined): RecentWeatherGroup | null;
-declare function parseWindShear(tokens: string[], index: number): WindShearParseResult | null;
-declare function parseSeaState(token: string | undefined): SeaStateGroup | null;
-declare function parseQfe(token: string | undefined): QfeGroup | null;
-declare function parseRemarks(tokens: string[]): RemarksGroup;
-declare function parseTrendSection(tokens: string[], startIndex: number): TrendParseResult | null;
-declare class MetarParser {
-    original: string;
-    tokens: string[];
-    i: number;
-    result: MetarParseResult;
-    constructor(message: string);
-    parse(): MetarParseResult;
-    peek(offset?: number): string | undefined;
-    next(): string | undefined;
-    hasMore(): boolean;
-    parseType(): void;
-    parseCorrection(): void;
-    parseStation(): void;
-    parseDateTime(): void;
-    parseAuto(): void;
-    parseWind(): void;
-    parseCavok(): void;
-    parseVisibility(): void;
-    parseRvrSection(): void;
-    parseWeatherSection(): void;
-    parseCloudSection(): void;
-    parseTemperatureDewpoint(): void;
-    parseAltimeter(): void;
-    parseSupplementary(): void;
-    finalize(): void;
-}
+type ParseMetarFunction = (message: string) => MetarParseResult;
 declare const parseMETAR: ParseMetarFunction;
 
-export { type AltimeterGroup, type AltimeterParse, type AltimeterUnit, type BaseVisibility, type CardinalDirection, type CloudClearGroup, type CloudGroup, type CloudLayerGroup, type CloudType, type CloudVerticalVisibilityGroup, type DateTimeGroup, type DirectionalVisibility, type MetarParseResult, type ObscuredCbGroup, type ParseMetarFunction, type ParseMetarHelpers, type ParsedAbbreviation, type ParsedWindSpeedPart, type PrevailingVisibility, type QfeGroup, type QfeUnit, type RecentWeatherGroup, type RemarksGroup, type ReportType, type RunwayStateGroup, type RvrGroup, type SeaStateGroup, type TemperatureDewpointParse, type TemperatureGroup, type TrendGroup, type TrendParseResult, type TrendTimeIndicator, type TrendTimeKind, type TrendType, type VerticalVisibility, type VerticalVisibilityUnit, type VisibilityBlock, type VisibilityGroup, type VisibilityUnit, type WeatherGroup, type WeatherPhenomenon, type WindDirection, type WindGroup, type WindShearGroup, type WindShearParseResult, type WindValueOperator, type WindVariationRange, parseMETAR as default };
+export { type AltimeterGroup, type AltimeterParse, type AltimeterUnit, type BaseVisibility, type CardinalDirection, type CloudClearGroup, type CloudGroup, type CloudLayerGroup, type CloudType, type CloudVerticalVisibilityGroup, type DateTimeGroup, type DirectionalVisibility, type MetarParseResult, type ObscuredCbGroup, type ParseMetarFunction, type ParsedAbbreviation, type ParsedWindSpeedPart, type PrevailingVisibility, type QfeGroup, type QfeUnit, type RecentWeatherGroup, type RemarksGroup, type ReportType, type RunwayStateGroup, type RvrGroup, type SeaStateGroup, type TemperatureDewpointParse, type TemperatureGroup, type TrendGroup, type TrendParseResult, type TrendTimeIndicator, type TrendTimeKind, type TrendType, type VerticalVisibility, type VerticalVisibilityUnit, type VisibilityBlock, type VisibilityGroup, type VisibilityUnit, type WeatherGroup, type WeatherPhenomenon, type WindDirection, type WindGroup, type WindShearGroup, type WindShearParseResult, type WindValueOperator, type WindVariationRange, parseMETAR as default };

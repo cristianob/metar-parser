@@ -318,9 +318,11 @@
     <section class="panel hidden" id="resultPanel"></section>
   </div>
 
-  <script type="module">
-    import parseMETAR from "../dist/metar-parser.js";
-    import EXAMPLES from "./metar-examples.js";
+  <script src="./metar-examples.browser.js"></script>
+  <script src="../dist/metar-parser.global.js"></script>
+  <script>
+    const EXAMPLES = window.METAR_EXAMPLES || [];
+    const parseMetarFn = window.parseMETAR;
 
     const resultPanel = document.getElementById("resultPanel");
     const input = document.getElementById("metarInput");
@@ -778,7 +780,7 @@
       if (!value) return;
 
       try {
-        renderSuccess(parseMETAR(value));
+        renderSuccess(parseMetarFn(value));
       } catch (error) {
         renderError(error);
       }

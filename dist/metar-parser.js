@@ -998,30 +998,7 @@ var MetarParser = class {
     }
   }
 };
-var parseMETAR = Object.assign((message) => new MetarParser(message).parse(), {
-  Parser: MetarParser,
-  parseRVR,
-  helpers: {
-    parseDateTimeGroup,
-    parseWind,
-    parseWindVariation,
-    parseVisibility,
-    parseVisibilityGroup,
-    parseDirectionalVisibility,
-    parseRVR,
-    parseRunwayState,
-    parseCloud,
-    parseTemperatureDewpoint,
-    parseAltimeter,
-    parseRecentWeather,
-    parseWindShear,
-    parseSeaState,
-    parseQfe,
-    parseRemarks,
-    parseTrendTimeToken,
-    parseTrendSection
-  }
-});
+var parseMETAR = (message) => new MetarParser(message).parse();
 var metar_parser_default = parseMETAR;
 export {
   metar_parser_default as default
