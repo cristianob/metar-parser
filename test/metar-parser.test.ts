@@ -53,6 +53,16 @@ describe("parser behavior", () => {
     expect(result.visibility.prevailing.unit).toBe("SM");
   });
 
+  it("parses altimeter groups terminated with =", () => {
+    const result = parseMETAR("METAR SBGR 261200Z 35008KT 9999 SCT040 28/18 Q1022=");
+
+    expect(result.altimeter.raw).toBe("Q1022=");
+    expect(result.altimeter.value).toBe(1022);
+    expect(result.altimeter.unit).toBe("hPa");
+    expect(result.altimeter.hPa).toBe(1022);
+    expect(result.altimeter.inHg).toBe(30.18);
+  });
+
   it("parses american visibility with fractions and less-than operator", () => {
     const result = parseMETAR("METAR KCRW 271454Z 35008G22KT M1/4SM -RA OVC008 08/07 A3008");
 

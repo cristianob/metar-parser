@@ -837,7 +837,7 @@ function parseSignedTemperature(part: string): number | null {
 }
 
 function parseAltimeter(token: string | undefined): AltimeterParse | null {
-  let match = /^Q(\d{4})$/.exec(token);
+  let match = /^Q(\d{4})=?$/.exec(token);
   if (match) {
     const hPa = toInt(match[1]);
     const inHg = parseFloat((hPa * 0.0295299830714).toFixed(2));
@@ -850,7 +850,7 @@ function parseAltimeter(token: string | undefined): AltimeterParse | null {
     };
   }
 
-  match = /^A(\d{4})$/.exec(token);
+  match = /^A(\d{4})=?$/.exec(token);
   if (match) {
     const value = parseFloat(`${match[1].slice(0, 2)}.${match[1].slice(2)}`);
     const hPa = Math.round(value / 0.0295299830714);
