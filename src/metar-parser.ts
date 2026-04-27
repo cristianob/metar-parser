@@ -3,6 +3,12 @@ type ParserError = Error & {
   token?: string | null;
 };
 
+export interface ParseWarning {
+  message: string;
+  token: string;
+  tokenIndex: number;
+}
+
 type Maybe<T> = T | null;
 
 export type ReportType = "METAR" | "SPECI";
@@ -289,6 +295,7 @@ export interface MetarParseResult {
   windShear: Maybe<WindShearGroup[]>;
   seaState: Maybe<SeaStateGroup>;
   remarks: Maybe<RemarksGroup>;
+  errors: ParseWarning[];
 }
 
 export interface TrendParseResult {
@@ -686,7 +693,7 @@ function parseRunwayState(token: string | undefined): RunwayStateGroup | null {
     };
   }
 
-  match = /^(R\d{2})([LRC])?\/(\d)(\d|\/)(\d{2}|\/\/)(\d{2}|\/\/)$/.exec(token);
+  match = /^(R\d{2})([LRC])?\/([\d\/])([\d\/])(\d{2}|\/\/)(\d{2}|\/\/)?$/.exec(token);
   if (!match) return null;
 
   return {
@@ -698,7 +705,7 @@ function parseRunwayState(token: string | undefined): RunwayStateGroup | null {
     depositCode: match[3],
     contaminationCode: match[4],
     depthCode: match[5],
-    frictionCode: match[6],
+    frictionCode: match[6] || null,
   };
 }
 
@@ -1144,6 +1151,7 @@ class MetarParser {
       windShear: null,
       seaState: null,
       remarks: null,
+      errors: [],
     };
   }
 
@@ -1169,6 +1177,7 @@ class MetarParser {
       this.parseCloudSection();
     }
 
+    this.parseRunwayStateSection();
     this.parseTemperatureDewpoint();
     this.parseAltimeter();
     this.parseSupplementary();
@@ -1285,10 +1294,20 @@ class MetarParser {
   parseRvrSection(): void {
     const list: RvrGroup[] = [];
     while (true) {
-      const parsed = parseRVR(this.peek());
-      if (!parsed) break;
-      list.push(parsed);
-      this.next();
+      const rvr = parseRVR(this.peek());
+      if (rvr) {
+        list.push(rvr);
+        this.next();
+        continue;
+      }
+      const rs = parseRunwayState(this.peek());
+      if (rs) {
+        if (!this.result.runwayState) this.result.runwayState = [];
+        this.result.runwayState.push(rs);
+        this.next();
+        continue;
+      }
+      break;
     }
     this.result.rvr = list.length > 0 ? list : null;
   }
@@ -1328,6 +1347,16 @@ class MetarParser {
     }
 
     this.result.clouds = clouds.length > 0 ? clouds : null;
+  }
+
+  parseRunwayStateSection(): void {
+    while (true) {
+      const group = parseRunwayState(this.peek());
+      if (!group) break;
+      if (!this.result.runwayState) this.result.runwayState = [];
+      this.result.runwayState.push(group);
+      this.next();
+    }
   }
 
   parseTemperatureDewpoint(): void {
@@ -1411,7 +1440,9 @@ class MetarParser {
         continue;
       }
 
-      this.next();
+      const tokenIndex = this.i;
+      const token = this.next()!;
+      this.result.errors.push({ message: "Unrecognized token", token, tokenIndex });
     }
 
     if (recentWeather.length > 0) {
@@ -1427,7 +1458,11 @@ class MetarParser {
     }
 
     if (runwayState.length > 0) {
-      this.result.runwayState = runwayState;
+      if (this.result.runwayState) {
+        this.result.runwayState.push(...runwayState);
+      } else {
+        this.result.runwayState = runwayState;
+      }
     }
   }
 

@@ -1058,6 +1058,57 @@ describe("parser behavior", () => {
     });
   });
 
+  it("parses temperature, dewpoint and QNH when runway state has all-slash fields (R29/////)", () => {
+    const result = parseMETAR(
+      "SPECI SBPA 261135Z 32003KT 280V020 1200 R29///// R11/P2000 BR BKN002 19/19 Q1010="
+    );
+
+    expect(result.temperature).toEqual({ raw: "19/19", air: 19, dewpoint: 19 });
+    expect(result.altimeter).toEqual({
+      raw: "Q1010=",
+      value: 1010,
+      unit: "hPa",
+      inHg: 29.83,
+      hPa: 1010,
+    });
+    expect(result.runwayState).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          raw: "R29/////",
+          runway: "R29",
+          direction: null,
+          cleared: false,
+          depositCode: "/",
+          contaminationCode: "/",
+          depthCode: "//",
+          frictionCode: null,
+        }),
+      ])
+    );
+  });
+
+  it("runway state with all-slash fields does not block temperature and QNH parsing", () => {
+    const result = parseMETAR(
+      "SPECI SBPA 261135Z 32003KT 280V020 1200 R29///// R11/P2000 BR BKN002 19/19 Q1010="
+    );
+
+    expect(result.temperature).not.toBeNull();
+    expect(result.altimeter).not.toBeNull();
+  });
+
+  it("errors is empty for a well-formed METAR", () => {
+    const result = parseMETAR("METAR SBPA 261135Z 32003KT 9999 FEW020 19/19 Q1010");
+    expect(result.errors).toEqual([]);
+  });
+
+  it("errors contains unrecognized tokens found in supplementary section", () => {
+    const result = parseMETAR("METAR SBPA 261135Z 32003KT 9999 FEW020 19/19 Q1010 BOGUS TOKEN");
+    expect(result.errors).toEqual([
+      expect.objectContaining({ message: "Unrecognized token", token: "BOGUS" }),
+      expect.objectContaining({ message: "Unrecognized token", token: "TOKEN" }),
+    ]);
+  });
+
   it("exports only the main parser function at runtime", () => {
     expect(typeof parseMETAR).toBe("function");
   });
