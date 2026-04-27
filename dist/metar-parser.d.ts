@@ -1,3 +1,8 @@
+interface ParseWarning {
+    message: string;
+    token: string;
+    tokenIndex: number;
+}
 type Maybe<T> = T | null;
 type ReportType = "METAR" | "SPECI";
 type CardinalDirection = "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW";
@@ -250,6 +255,7 @@ interface MetarParseResult {
     windShear: Maybe<WindShearGroup[]>;
     seaState: Maybe<SeaStateGroup>;
     remarks: Maybe<RemarksGroup>;
+    errors: ParseWarning[];
 }
 interface TrendParseResult {
     consumed: number;
@@ -262,4 +268,4 @@ interface WindShearParseResult {
 type ParseMetarFunction = (message: string) => MetarParseResult;
 declare const parseMETAR: ParseMetarFunction;
 
-export { type AltimeterGroup, type AltimeterParse, type AltimeterUnit, type BaseVisibility, type CardinalDirection, type CloudClearGroup, type CloudGroup, type CloudLayerGroup, type CloudType, type CloudVerticalVisibilityGroup, type DateTimeGroup, type DirectionalVisibility, type MetarParseResult, type ObscuredCbGroup, type ParseMetarFunction, type ParsedAbbreviation, type ParsedWindSpeedPart, type PrevailingVisibility, type QfeGroup, type QfeUnit, type RecentWeatherGroup, type RemarksGroup, type ReportType, type RunwayStateGroup, type RvrGroup, type SeaStateGroup, type TemperatureDewpointParse, type TemperatureGroup, type TrendGroup, type TrendParseResult, type TrendTimeIndicator, type TrendTimeKind, type TrendType, type VerticalVisibility, type VerticalVisibilityUnit, type VisibilityBlock, type VisibilityGroup, type VisibilityUnit, type WeatherGroup, type WeatherPhenomenon, type WindDirection, type WindGroup, type WindShearGroup, type WindShearParseResult, type WindValueOperator, type WindVariationRange, parseMETAR as default };
+export { type AltimeterGroup, type AltimeterParse, type AltimeterUnit, type BaseVisibility, type CardinalDirection, type CloudClearGroup, type CloudGroup, type CloudLayerGroup, type CloudType, type CloudVerticalVisibilityGroup, type DateTimeGroup, type DirectionalVisibility, type MetarParseResult, type ObscuredCbGroup, type ParseMetarFunction, type ParseWarning, type ParsedAbbreviation, type ParsedWindSpeedPart, type PrevailingVisibility, type QfeGroup, type QfeUnit, type RecentWeatherGroup, type RemarksGroup, type ReportType, type RunwayStateGroup, type RvrGroup, type SeaStateGroup, type TemperatureDewpointParse, type TemperatureGroup, type TrendGroup, type TrendParseResult, type TrendTimeIndicator, type TrendTimeKind, type TrendType, type VerticalVisibility, type VerticalVisibilityUnit, type VisibilityBlock, type VisibilityGroup, type VisibilityUnit, type WeatherGroup, type WeatherPhenomenon, type WindDirection, type WindGroup, type WindShearGroup, type WindShearParseResult, type WindValueOperator, type WindVariationRange, parseMETAR as default };

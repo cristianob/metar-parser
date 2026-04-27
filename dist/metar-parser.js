@@ -339,7 +339,7 @@ function parseRunwayState(token) {
       frictionCode: null
     };
   }
-  match = /^(R\d{2})([LRC])?\/(\d)(\d|\/)(\d{2}|\/\/)(\d{2}|\/\/)$/.exec(token);
+  match = /^(R\d{2})([LRC])?\/([\d\/])([\d\/])(\d{2}|\/\/)(\d{2}|\/\/)?$/.exec(token);
   if (!match) return null;
   return {
     raw: token,
@@ -350,7 +350,7 @@ function parseRunwayState(token) {
     depositCode: match[3],
     contaminationCode: match[4],
     depthCode: match[5],
-    frictionCode: match[6]
+    frictionCode: match[6] || null
   };
 }
 function parseWeatherGroup(token, parts) {
@@ -741,7 +741,8 @@ var MetarParser = class {
       recentWeather: null,
       windShear: null,
       seaState: null,
-      remarks: null
+      remarks: null,
+      errors: []
     };
   }
   parse() {
@@ -763,6 +764,7 @@ var MetarParser = class {
       this.parseWeatherSection();
       this.parseCloudSection();
     }
+    this.parseRunwayStateSection();
     this.parseTemperatureDewpoint();
     this.parseAltimeter();
     this.parseSupplementary();
@@ -862,10 +864,20 @@ var MetarParser = class {
   parseRvrSection() {
     const list = [];
     while (true) {
-      const parsed = parseRVR(this.peek());
-      if (!parsed) break;
-      list.push(parsed);
-      this.next();
+      const rvr = parseRVR(this.peek());
+      if (rvr) {
+        list.push(rvr);
+        this.next();
+        continue;
+      }
+      const rs = parseRunwayState(this.peek());
+      if (rs) {
+        if (!this.result.runwayState) this.result.runwayState = [];
+        this.result.runwayState.push(rs);
+        this.next();
+        continue;
+      }
+      break;
     }
     this.result.rvr = list.length > 0 ? list : null;
   }
@@ -899,6 +911,15 @@ var MetarParser = class {
       this.next();
     }
     this.result.clouds = clouds.length > 0 ? clouds : null;
+  }
+  parseRunwayStateSection() {
+    while (true) {
+      const group = parseRunwayState(this.peek());
+      if (!group) break;
+      if (!this.result.runwayState) this.result.runwayState = [];
+      this.result.runwayState.push(group);
+      this.next();
+    }
   }
   parseTemperatureDewpoint() {
     const parsed = parseTemperatureDewpoint(this.peek());
@@ -971,7 +992,9 @@ var MetarParser = class {
         this.next();
         continue;
       }
-      this.next();
+      const tokenIndex = this.i;
+      const token = this.next();
+      this.result.errors.push({ message: "Unrecognized token", token, tokenIndex });
     }
     if (recentWeather.length > 0) {
       this.result.recentWeather = recentWeather;
@@ -983,7 +1006,11 @@ var MetarParser = class {
       this.result.trend = trend;
     }
     if (runwayState.length > 0) {
-      this.result.runwayState = runwayState;
+      if (this.result.runwayState) {
+        this.result.runwayState.push(...runwayState);
+      } else {
+        this.result.runwayState = runwayState;
+      }
     }
   }
   finalize() {
