@@ -53,14 +53,60 @@ describe("parser behavior", () => {
     expect(result.visibility.prevailing.unit).toBe("SM");
   });
 
-  it("parses altimeter groups terminated with =", () => {
+  it("strips the Brazilian message terminator = from the altimeter token", () => {
     const result = parseMETAR("METAR SBGR 261200Z 35008KT 9999 SCT040 28/18 Q1022=");
 
-    expect(result.altimeter.raw).toBe("Q1022=");
+    expect(result.altimeter.raw).toBe("Q1022");
     expect(result.altimeter.value).toBe(1022);
     expect(result.altimeter.unit).toBe("hPa");
     expect(result.altimeter.hPa).toBe(1022);
     expect(result.altimeter.inHg).toBe(30.18);
+  });
+
+  it("strips = from the A-format altimeter token", () => {
+    const result = parseMETAR("METAR KJFK 261651Z 18012KT 10SM -RA BKN020 OVC050 18/16 A2992=");
+
+    expect(result.altimeter.raw).toBe("A2992");
+    expect(result.altimeter.value).toBe(29.92);
+    expect(result.altimeter.unit).toBe("inHg");
+  });
+
+  it("strips = when the last token is a NOSIG trend", () => {
+    const result = parseMETAR("METAR SBSP 261600Z 27012KT 9999 SCT030 25/18 Q1012 NOSIG=");
+
+    expect(result.altimeter.value).toBe(1012);
+    expect(result.trend).toHaveLength(1);
+    expect(result.trend[0].type).toBe("NOSIG");
+  });
+
+  it("strips = when the last token is a temperature/dewpoint group", () => {
+    const result = parseMETAR("METAR SBGL 261300Z 18010KT 9999 FEW030 28/19=");
+
+    expect(result.temperature).toEqual({ raw: "28/19", air: 28, dewpoint: 19 });
+  });
+
+  it("strips = when the last token is a BECMG trend", () => {
+    const result = parseMETAR("METAR SBCT 261200Z 00000KT 9999 SCT025 22/17 Q1018 BECMG SKC=");
+
+    expect(result.altimeter.value).toBe(1018);
+    expect(result.trend).toHaveLength(1);
+    expect(result.trend[0].type).toBe("BECMG");
+  });
+
+  it("strips = appended to the last token regardless of its type (altimeter)", () => {
+    const result = parseMETAR("METAR SBRF 261200Z 09010KT 9999 FEW020 28/20 Q1015=");
+
+    expect(result.wind.speed).toBe(10);
+    expect(result.wind.direction).toBe(90);
+    expect(result.altimeter.value).toBe(1015);
+    expect(result.altimeter.raw).toBe("Q1015");
+  });
+
+  it("strips = when the last token is a remark", () => {
+    const result = parseMETAR("METAR SBFZ 261200Z 12008KT 9999 SCT020 27/20 Q1014 RMK PK WND 12025/1158=");
+
+    expect(result.altimeter.value).toBe(1014);
+    expect(result.remarks).toBeDefined();
   });
 
   it("parses american visibility with fractions and less-than operator", () => {
@@ -1065,7 +1111,7 @@ describe("parser behavior", () => {
 
     expect(result.temperature).toEqual({ raw: "19/19", air: 19, dewpoint: 19 });
     expect(result.altimeter).toEqual({
-      raw: "Q1010=",
+      raw: "Q1010",
       value: 1010,
       unit: "hPa",
       inHg: 29.83,
